@@ -17,33 +17,38 @@ def load_config(config_file):
     config.read(config_file)
     return config['FEATURES']
 
+# Decorator to time functions
+def time_it(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        elapsed_time = time.time() - start_time
+        return result, elapsed_time
+    return wrapper
+
 # Function to get time vs phase
+@time_it
 def get_time_vs_phase(pfd_contents):
-    start_time = time.time()
     result = pfd_contents.time_vs_phase()
-    elapsed_time = time.time() - start_time
     return result, elapsed_time
 
 # Function to get dedispersed and summed profile
+@time_it
 def get_dedispersed_profile(pfd_contents):
-    start_time = time.time()
     pfd_contents.dedisperse()
     result = pfd_contents.sumprof
-    elapsed_time = time.time() - start_time
     return result, elapsed_time
 
 # Function to get frequency vs phase
+@time_it
 def get_freq_vs_phase(pfd_instance):
-    start_time = time.time()
     result = pfd_instance.plot_subbands()
-    elapsed_time = time.time() - start_time
     return result, elapsed_time
 
 # Function to get chi2 vs DM curve
+@time_it
 def get_dm_curve(pfd_instance):
-    start_time = time.time()
     result = pfd_instance.DM_curve_Data()
-    elapsed_time = time.time() - start_time
     return result, elapsed_time
 
 # Type 6 Feature Functions
@@ -51,32 +56,28 @@ def compute_type_6_if_not_done(pfd_instance):  #checks if the Lyon features have
     if 'MEAN_IFP' not in pfd_instance.features1: #can be any feature instead of MEAN_IFP as an indicator
         pfd_instance.computeType_6()
 
+@time_it
 def get_mean_ifp(pfd_instance):
     compute_type_6_if_not_done(pfd_instance)
-    start_time = time.time()
     result = pfd_instance.features1['MEAN_IFP']
-    elapsed_time = time.time() - start_time
     return result, elapsed_time
 
+@time_it
 def get_std_ifp(pfd_instance):
     compute_type_6_if_not_done(pfd_instance)
-    start_time = time.time()
     result = pfd_instance.features1['STD_IFP']
-    elapsed_time = time.time() - start_time
     return result, elapsed_time
 
+@time_it
 def get_skw_ifp(pfd_instance):
     compute_type_6_if_not_done(pfd_instance)
-    start_time = time.time()
     result = pfd_instance.features1['SKW_IFP']
-    elapsed_time = time.time() - start_time
     return result, elapsed_time
 
+@time_it
 def get_kurt_ifp(pfd_instance):
     compute_type_6_if_not_done(pfd_instance)
-    start_time = time.time()
     result = pfd_instance.features1['KURT_IFP']
-    elapsed_time = time.time() - start_time
     return result, elapsed_time
 
 def get_mean_dm(pfd_instance):
@@ -140,42 +141,9 @@ def main():
         print(f'freq vs phase: {freq_vs_phase} (Time taken: {time_taken:.4f} seconds)')
 
     if features_to_extract.getboolean('dm_curve'):
-        #dm_curve, time_taken = get_dm_curve(pfd_instance)
-        #data = pfd_instance.plot_chi2_vs_DM(loDM=0, hiDM=40)
         lodm = pfd_contents.dms[0]
         hidm = pfd_contents.dms[-1]
-        (chis, DMs) = pfd_contents.plot_chi2_vs_DM(loDM=lodm, hiDM=hidm, N=100,device='/PS')
-
-# Optionally, you can print the output
-        print("Chi^2 values:", chis)
-        print("DM values:", DMs)
-
-        
-        
-        # plt.plot(data[1], data[0])
-        # plt.savefig('devika_check.png')
-        #print(f'DM curve: {dm_curve} (Time taken: {time_taken:.4f} seconds)')
-
-        # x=dm_curve[0]
-        # y=dm_curve[1]
-
-
-        #x = x - min(x)
-        # print(delta_x, y)
-        #plt.plot(y, x)
-        # print(np.shape(x), np.shape(y))
-        #plt.savefig('devika.png')
-        # plt.show()
-        # print(x)
-        # print(y)
-        # print('dm curve array', type(dm_curve_array))
-        # print('dm curve type', type(dm_curve))
-        #print(dm_curve)
-        sys.exit()
-        #print(dm_curve_array)
-        #plt.plot(dm_curve_array[:,0],dm_curve_array[:,1])
-        #plt.plot(dm_curve_array,y)
-        #plt.plot(dm_curve[:,0],dm_curve[:,1])
+        (chis, DMs) = pfd_contents.plot_chi2_vs_DM(loDM=lodm, hiDM=hidm, N=100,device='dev.ps/ps')
 
     # Type 6 Features
     if features_to_extract.getboolean('mean_ifp'):

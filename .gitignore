@@ -3,3 +3,7 @@
 *.ps
 *.pdf
 *.ipynb
+*.npy
+*.pfd
+*.pfd.bestprof
+*.sif

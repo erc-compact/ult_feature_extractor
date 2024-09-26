@@ -246,12 +246,12 @@ class PFD(Utilities.Utilities):
             # Candidate file is valid.
             else:
                 print("Candidate file valid.")
-                self.profile = array(self.getprofile())
+                self.profile = np.array(self.getprofile())
             
         # Just go directly to feature generation without checks.
         else:
             self.out( "Candidate validity checks skipped.","")
-            self.profile = array(self.getprofile())
+            self.profile = np.array(self.getprofile())
     
     # ****************************************************************************************************
     
@@ -426,7 +426,7 @@ class PFD(Utilities.Utilities):
             
             # print(len(self.barysubfreqs))
             # sys.exit()
-            print('freq',(self.barysubfreqs))
+            #print('freq',(self.barysubfreqs))
             #print(len(DMs))
             #sys.exit()
             subdelays = self.fe.delay_from_DM_new(DM, self.barysubfreqs)
@@ -972,10 +972,10 @@ class PFD(Utilities.Utilities):
                 print("Feature 3. Skewness of the integrated (folded) pulse profile = ",          str(skw))
                 print("Feature 4. Excess Kurtosis of the integrated (folded) pulse profile = ",   str(kurt))
                 
-            self.features.append(mn)
-            self.features.append(stdev)
-            self.features.append(skw)
-            self.features.append(kurt)
+            # self.features.append(mn)
+            # self.features.append(stdev)
+            # self.features.append(skw)
+            # self.features.append(kurt)
 
             self.features1['MEAN_IFP'] = np.mean(bins)
             self.features1['STD_IFP'] = np.std(bins)
@@ -1002,10 +1002,10 @@ class PFD(Utilities.Utilities):
                 print("Feature 7. Skewness of the SNR-DM Curve = ",          str(skw))
                 print("Feature 8. Excess Kurtosis of the SNR-DM Curve = ",   str(kurt))
                 
-            self.features.append(mn)
-            self.features.append(stdev)
-            self.features.append(skw)
-            self.features.append(kurt) 
+            # self.features.append(mn)
+            # self.features.append(stdev)
+            # self.features.append(skw)
+            # self.features.append(kurt) 
             
         except Exception as e: # catch *all* exceptions
             print("Error getting features from PFD file\n\t", sys.exc_info()[0])

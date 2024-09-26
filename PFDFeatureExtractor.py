@@ -352,8 +352,6 @@ class PFDFeatureExtractor(FeatureExtractor):
         
         """
         
-        lodm = data.dms[0]
-        hidm = data.dms[-1]
         y_values,dm_index = data.plot_chi2_vs_DM(lodm, hidm)
         
         return y_values,dm_index

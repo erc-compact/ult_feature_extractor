@@ -342,7 +342,7 @@ class FeatureExtractor(Utilities.Utilities):
         # This call to leastsq() uses the full-output=True flag so that we can compute the 
         # R2 and other stats. This makes it easier to validate and debug the resulting fit
         # in other tools like Matlab. The original code is left below, just uncomment and
-        # remove new code if necessary (1).
+        # remove new code if necessary (1).    
         #leastSquaresParameters = leastsq(__residuals, parameters, args=(xData,yData,amplitude),full_output=True)
         #fit = __evaluate(xData, leastSquaresParameters[0],amplitude)
         leastSquaresParameters,cov,infodict,mesg,ier = leastsq(__residuals, parameters, args=(xData,yData,amplitude,background),full_output=True) # @UnusedVariable
@@ -380,7 +380,7 @@ class FeatureExtractor(Utilities.Utilities):
             print("\tBackground: ",background)
             plt.plot(xData,yData,'o', xData, __evaluate(xData, leastSquaresParameters,amplitude,background))
             plt.title("Sine fit to Profile")
-            plt.show()
+            plt.savefig('plot.png')
         
         #return leastSquaresParameters[0], chisq*pow(maxima,4)/100000000., fit, xData, yData
         # I've commented out the return statement above, as only the chi-squared value is used.
@@ -473,7 +473,8 @@ class FeatureExtractor(Utilities.Utilities):
             print("\tPhi: ",str(leastSquaresParameters[1]))
             plt.plot(xData,yData,'o', xData, __evaluate(xData, leastSquaresParameters,amplitude,background))
             plt.title("Sine Squared fit to Profile")
-            plt.show()
+            #plt.show()
+            plt.savefig('plot2.png')
         
         
         #return leastSquaresParameters[0], chisq / pow(float(maxima),4), fit, xData, yData
