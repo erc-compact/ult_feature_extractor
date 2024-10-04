@@ -562,6 +562,8 @@ class PFD(Utilities.Utilities):
         profs = self.profs.sum(0)
         lof = self.lofreq - 0.5*self.chan_wid
         hif = lof + self.chan_wid*self.numchan
+
+        
         
         return profs
                         
