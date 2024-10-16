@@ -318,7 +318,7 @@ class PFDFeatureExtractor(FeatureExtractor):
         chi_fit,chi_theo = 0,0
         ndeg = 0
         for i in range(length):
-            if theo[i] > 0:
+            if theo[i] > 0:  
                 chi_fit  += (yData[i]-fit[i])**2  / fit[i]
                 chi_theo += (yData[i]-theo[i])**2 / theo[i]
                 ndeg += 1

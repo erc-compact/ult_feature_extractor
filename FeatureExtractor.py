@@ -364,23 +364,23 @@ class FeatureExtractor(Utilities.Utilities):
         #print "fit:\n", fit
         
         # This section should be commented out when testing is completed.
-        if(self.debug):
-            ssErr = (infodict['fvec']**2).sum() # 'fvec' is an array of residuals. 
-            yData = array(yData)
-            ssTot = ((yData-yData.mean())**2).sum()
-            rsquared = 1-(ssErr/ssTot )
+        #if(self.debug):
+        ssErr = (infodict['fvec']**2).sum() # 'fvec' is an array of residuals. 
+        yData = array(yData)
+        ssTot = ((yData-yData.mean())**2).sum()
+        rsquared = 1-(ssErr/ssTot )
             
-            print("\n\tSine fit to Pulse profile statistics:")
-            print("\tStandard Error: ", ssErr)
-            print("\tTotal Error: ", ssTot)
-            print("\tR-Squared: ", rsquared)
-            print("\tAmplitude: ",amplitude)
-            print("\tFrequency: ",str(leastSquaresParameters[0]))
-            print("\tPhi: ",str(leastSquaresParameters[1]))
-            print("\tBackground: ",background)
-            plt.plot(xData,yData,'o', xData, __evaluate(xData, leastSquaresParameters,amplitude,background))
-            plt.title("Sine fit to Profile")
-            plt.savefig('plot.png')
+        print("\n\tSine fit to Pulse profile statistics:")
+        print("\tStandard Error: ", ssErr)
+        print("\tTotal Error: ", ssTot)
+        print("\tR-Squared: ", rsquared)
+        print("\tAmplitude: ",amplitude)
+        print("\tFrequency: ",str(leastSquaresParameters[0]))
+        print("\tPhi: ",str(leastSquaresParameters[1]))
+        print("\tBackground: ",background)
+        plt.plot(xData,yData,'o', xData, __evaluate(xData, leastSquaresParameters,amplitude,background))
+        plt.title("Sine fit to Profile")
+        plt.savefig('plot.png')
         
         #return leastSquaresParameters[0], chisq*pow(maxima,4)/100000000., fit, xData, yData
         # I've commented out the return statement above, as only the chi-squared value is used.
