@@ -27,9 +27,9 @@ def down(data, bins):
     down_data= downsample(data,bins)
     return down_data
 
-
+ 
 def one_file(files, cpu, directory='.', tag='yes'):
-    df = pd.DataFrame(columns=['file', 'chi2_sine', 'chi2_sine_square', 'chi2_gauss', 'chi2_dble'])
+    df = pd.DataFrame(columns=['file', 'chi2_sine', 'chi2_sine_square', 'chi2_gauss', 'chi2_dble','sigma_val', 'sigma1_val', 'sigma2_val'])
     
     for i, file in enumerate(files):
         print_exe(f'{i}/{len(files)} x 48') if cpu == 0 else None
@@ -38,16 +38,16 @@ def one_file(files, cpu, directory='.', tag='yes'):
             summed_profile = get_dedispersed_profile(pfd_contents)
 
             # Perform fits using the provided tag and directory
-            chi2_sine = sine_fit(summed_profile, tag, directory=directory)
+            chi2_sine = sine_fit1(summed_profile, tag, directory=directory)
             chi2_sine_square = sine_squared_fit(summed_profile, tag, directory=directory)
-            chi2_gauss = gaussian_fit(summed_profile, tag, directory=directory)
-            chi2_dble = double_gaussian_fit(summed_profile, tag, directory=directory)
+            sigma_val, chi2_gauss,  = gaussian_fit(summed_profile, tag, directory=directory)
+            sigma1_val, sigma2_val, chi2_dble= double_gaussian_fit(summed_profile, tag, directory=directory)
         except Exception:
             # In case of error, set chi2 values to 0
-            df.loc[i] = [file, 0, 0, 0, 0]
+            df.loc[i] = [file, 0, 0, 0, 0, 0, 0, 0]
         else:
             # Otherwise, record the chi2 values for each file
-            df.loc[i] = [file, chi2_sine, chi2_sine_square, chi2_gauss, chi2_dble]
+            df.loc[i] = [file, chi2_sine, chi2_sine_square, chi2_gauss, chi2_dble, sigma_val, sigma1_val, sigma2_val]
 
     # Save the results to a CSV file
     df.to_csv(f'/tmp/dbhatnagar/temp_{cpu}.tmpcsv')
@@ -62,11 +62,17 @@ def reshape_into_cpu(files, ncpu):
 def sine_function(x, A, omega, phi, C):
     return A * np.sin(omega * x + phi) + C
 
+def sine_function_fixedF(x, A, phi, C):
+    omega=2*np.pi*(1/64)
+    return A * np.sin(omega * x + phi) + C  
+
 # Define sine squared function
-def sine_squared_function(x, A, omega, phi, C):
+def sine_squared_function(x, A, phi, C):
+    omega=2*np.pi*(1/64)
     return A * (np.sin(omega * x + phi))**2 + C
 
 # Define Gaussian function
+
 def gaussian_function(x, A, mu, sigma, C):
     return A * np.exp(-(x - mu)**2 / (2 * sigma**2)) + C
 
@@ -79,7 +85,7 @@ def double_gaussian_function(x, A1, mu1, sigma1, A2, mu2, sigma2, C):
 # Function to plot and fit for a given data and function, with optional suffix and directory
 def fit_and_plot(x_data, y_data, fit_function, initial_guess, plot_title, base_filename, suffix='', directory='',csv_maker=False):
     # Fit the data using the provided fit function and initial guess
-    params, covariance = curve_fit(fit_function, x_data, y_data, p0=initial_guess)
+    params, covariance = curve_fit(fit_function, x_data, y_data, p0=initial_guess, maxfev=30000)
     # print("Final parameters:")
     # print(f"Amplitude (A): {params[0]}")
     # print(f"Angular Frequency (omega): {params[1]}")
@@ -92,7 +98,7 @@ def fit_and_plot(x_data, y_data, fit_function, initial_guess, plot_title, base_f
     # Calculate chi-square
     chi_square = np.sum(((y_data - y_fit) ** 2))  # Assuming equal weights (no error provided)
     if csv_maker==True:
-        return chi_square
+        return chi_square, params
     else:
         print(f"Chi-square value for {plot_title}: {chi_square:.2f}")
 
@@ -117,8 +123,8 @@ def fit_and_plot(x_data, y_data, fit_function, initial_guess, plot_title, base_f
 def print_exe(output):
     os.system("echo " + str(output))
 
-# Sine fit
-def sine_fit(sumprof, suffix='', directory=''):
+
+def sine_fit1(sumprof, suffix='', directory=''):
     # Prepare the data
     data = sumprof.flatten()
     normalized_data = (data - np.mean(data)) / np.std(data)
@@ -127,14 +133,12 @@ def sine_fit(sumprof, suffix='', directory=''):
     # Initial guess for [amplitude, frequency, phase, offset]
     amplitude_guess = (max(data) - min(data)) / 2
     offset_guess = np.mean(data)
-    initial_guess = [amplitude_guess, 2 * np.pi / len(sumprof), 0, offset_guess]
+    initial_guess = [amplitude_guess, 0, offset_guess]
 
     #csv maker
-    return fit_and_plot(x_data, normalized_data, sine_function, initial_guess,'Sine Fit', 'sine_fit_plot', suffix, directory, csv_maker=True)
-
-    # fit_and_plot(x_data, normalized_data, sine_function, initial_guess, 'Sine Fit', 'sine_fit_plot', suffix, directory)
-
-
+    chi_square,params= fit_and_plot(x_data, normalized_data, sine_function_fixedF, initial_guess,'Sine Fit', 'sine_fit_plot', suffix, directory, csv_maker=True)
+    return chi_square
+    #fit_and_plot(x_data, normalized_data, sine_function_fixedF, initial_guess, 'Sine Fit fixed F', 'sine_fit_plot_fixedF', suffix, directory)
 
 # Sine-squared fit
 def sine_squared_fit(sumprof, suffix='', directory=''):
@@ -146,11 +150,13 @@ def sine_squared_fit(sumprof, suffix='', directory=''):
     # Initial guess for [amplitude, frequency, phase, offset]
     amplitude_guess = (max(data) - min(data)) / 2
     offset_guess = np.mean(data)
-    initial_guess = [amplitude_guess, 2 * np.pi / len(sumprof), 0, offset_guess]
+    #initial_guess = [amplitude_guess, 2 * np.pi / len(sumprof), 0, offset_guess]
+    initial_guess = [amplitude_guess, 0, offset_guess]
 
 
     #csv maker
-    return fit_and_plot(x_data, normalized_data, sine_squared_function, initial_guess,'Sine Squared Fit', 'sine_squared_fit_plot', suffix, directory,csv_maker=True)
+    chi_square,params=fit_and_plot(x_data, normalized_data, sine_squared_function, initial_guess,'Sine Squared Fit', 'sine_squared_fit_plot', suffix, directory,csv_maker=True)
+    return chi_square
 
     # fit_and_plot(x_data, normalized_data, sine_squared_function, initial_guess,'Sine Squared Fit', 'sine_squared_fit_plot', suffix, directory)
                 
@@ -169,10 +175,14 @@ def gaussian_fit(sumprof, suffix='', directory=''):
     offset_guess = np.mean(data)
     initial_guess = [amplitude_guess, mean_guess, sigma_guess, offset_guess]
 
-    #csv maker
-    return fit_and_plot(x_data, normalized_data, gaussian_function, initial_guess,'Gaussian Fit', 'gaussian_fit_plot', suffix, directory, csv_maker=True)
+    
+    # Fit and return chi-square and fitted parameters (including sigma)
+    chi_square, params = fit_and_plot(x_data, normalized_data, gaussian_function, initial_guess, 'Gaussian Fit', 'gaussian_fit_plot', suffix, directory, csv_maker=True)
 
-    # fit_and_plot(x_data, normalized_data, gaussian_function, initial_guess, 'Gaussian Fit', 'gaussian_fit_plot', suffix, directory)
+    # Extract the sigma (third parameter) from the fitted params
+    fitted_sigma = params[2]
+
+    return chi_square, fitted_sigma
 
 # Double Gaussian fit
 def double_gaussian_fit(sumprof, suffix='', directory=''):
@@ -191,10 +201,14 @@ def double_gaussian_fit(sumprof, suffix='', directory=''):
     offset_guess = np.mean(data)
     initial_guess = [amplitude_guess1, mean_guess1, sigma_guess1, amplitude_guess2, mean_guess2, sigma_guess2, offset_guess]
 
-    # csv maker
-    return fit_and_plot(x_data, normalized_data, double_gaussian_function, initial_guess,'Double Gaussian Fit', 'double_gaussian_fit_plot', suffix, directory, csv_maker=True)
+    # Fit and return chi-square and fitted parameters (including sigmas)
+    chi_square, params = fit_and_plot(x_data, normalized_data, double_gaussian_function, initial_guess, 'Double Gaussian Fit', 'double_gaussian_fit_plot', suffix, directory, csv_maker=True)
 
-    # fit_and_plot(x_data, normalized_data, double_gaussian_function, initial_guess, 'Double Gaussian Fit', 'double_gaussian_fit_plot', suffix, directory)
+    # Extract the sigmas (third and sixth parameters) from the fitted params
+    fitted_sigma1 = params[2]
+    fitted_sigma2 = params[5]
+
+    return chi_square, fitted_sigma1, fitted_sigma2
 
 # Function to get dedispersed and summed profile
 def get_dedispersed_profile(pfd_contents):
@@ -206,57 +220,6 @@ def get_dedispersed_profile(pfd_contents):
     result=downsample(result,64)
     #elapsed_time = time.time() - start_time
     return result
-
-# def main():
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--file", help="pfd file", required=True)
-#     parser.add_argument("--tag", help="Name for folder and prefix", required=True)  # New argument
-#     #parser.add_argument("--config", help="config file", required=True)
-#     args = parser.parse_args()
-#     debugFlag=True
-#     FE=FeatureExtractor(debugFlag)
-
-#     test_pfd = args.file
-#     tag = args.tag 
-#     #config_file = args.config
-
-#     # Load configuration
-#     #features_to_extract = load_config(config_file)
-    
-#     # Load PFD file based on presto
-#     pfd_contents = pp.pfd(test_pfd)
-#     summed_profile = get_dedispersed_profile(pfd_contents)
-#     #plot_summed_profile(summed_profile)
-#     sine_fit(summed_profile, tag, directory=f'/hercules/scratch/dbhatnagar/Classifier_data_samples/chi_square_15Oct/{tag}')
-#     sine_squared_fit(summed_profile, tag, directory=f'/hercules/scratch/dbhatnagar/Classifier_data_samples/chi_square_15Oct/{tag}')
-#     gaussian_fit(summed_profile, tag, directory=f'/hercules/scratch/dbhatnagar/Classifier_data_samples/chi_square_15Oct/{tag}')
-#     double_gaussian_fit(summed_profile, tag, directory=f'/hercules/scratch/dbhatnagar/Classifier_data_samples/chi_square_15Oct/{tag}')
-#     # sine_squared_fit(sumprof)
-#     # gaussian_fit(sumprof)
-#     # double_gaussian_fit(sumprof)
-
-# def main():
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--dir", help="pfd dir", required=True)
-#     args = parser.parse_args()
-
-#     directory = Path(args.dir)
-#     files = [str(file) for file in directory.glob("*.pfd")]
-
-#     ncpus = 48
-#     files_cpu_split = reshape_into_cpu(files, ncpus)
-#     data = list(zip(files_cpu_split, np.arange(ncpus)))
-    
-#     with Pool(ncpus) as p:
-#         p.starmap(one_file, data)
-
-
-#     final_df = pd.DataFrame(columns=['file', 'chi2_sine', 'chi2_sine_square', 'chi2_gauss', 'chi2_dble'])
-#     for cpu in range(ncpus):
-#         df_tmp = pd.read_csv(f'/tmp/dbhatnagar/temp_{cpu}.tmpcsv', index_col=0)
-#         final_df = pd.concat([final_df, df_tmp], ignore_index=True)
-
-#     final_df.to_csv(f'/tmp/dbhatnagar/{directory.name}.csv')
 
 def main():
     parser = argparse.ArgumentParser()
@@ -279,7 +242,9 @@ def main():
         p.starmap(one_file, data)
 
     # Combine the temporary CSV files from all CPUs into a single DataFrame
-    final_df = pd.DataFrame(columns=['file', 'chi2_sine', 'chi2_sine_square', 'chi2_gauss', 'chi2_dble'])
+    
+    final_df = pd.DataFrame(columns=['file', 'chi2_sine', 'chi2_sine_square', 'chi2_gauss', 'chi2_dble','sigma_val', 'sigma1_val', 'sigma2_val'])
+    
     for cpu in range(ncpus):
         df_tmp = pd.read_csv(output_dir / f'temp_{cpu}.tmpcsv', index_col=0)  # Read from output_dir
         final_df = pd.concat([final_df, df_tmp], ignore_index=True)

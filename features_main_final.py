@@ -63,7 +63,7 @@ class UFE:
     def get_dedispersed_profile(self):
         self.pfd_contents.dedisperse()
         result = self.pfd_contents.sumprof
-        #np.save('intensity_PALFANP.npy',result)
+        np.save('robert_intensity_GBNCC_3.npy',result)
         return result
     
     # Function to get frequency vs phase
@@ -427,7 +427,7 @@ class UFE:
             summed_profile, time_taken = self.get_dedispersed_profile()
             #print(f'dedispersed and summed profile: {summed_profile} (Time taken: {time_taken:.4f} seconds)')
             #print('intensity',summed_profile.shape)
-            self.data_saver(summed_profile,'Intensity', 64, save_plots=True, normalize_method='meanSub', save_directory='/hercules/u/dbhatnagar/PulsarFeatureLab/PFL_Python3_Src/Zero_DM_tests/GBNCC_RFI_2', save_npy=False,intensity1=True)
+            #self.data_saver(summed_profile,'Intensity', 64, save_plots=True, normalize_method='meanSub', save_directory='/hercules/u/dbhatnagar/PulsarFeatureLab/PFL_Python3_Src/Zero_DM_tests/GBNCC_RFI_2', save_npy=False,intensity1=True)
 
         if self.features_to_extract.getboolean('freq_vs_phase'):
             freq_vs_phase, time_taken = self.get_freq_vs_phase()

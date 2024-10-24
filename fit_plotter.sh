@@ -7,4 +7,4 @@ sing_img="/hercules/:/hercules/ /hercules/u/dbhatnagar/PulsarFeatureLab/PFL_Pyth
 #command1="python3 all_features_presto.py --file \"$file\""
 #command1="python3 features_main.py --file \"$file\" --config  \"$config\""
 #singularity exec -H $HOME:/home -B $sing_img $command1 
-singularity exec -H $HOME:/home -B $sing_img python3 all_fits.py --file "$file" --tag "$tag"
+singularity exec -H $HOME:/home -B $sing_img python3 all_fits_new.py --file "$file" --tag "$tag"
