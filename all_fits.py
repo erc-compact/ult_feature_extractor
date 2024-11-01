@@ -22,6 +22,7 @@ import pandas as pd
 from pathlib import Path
 from multiprocessing import Pool
 import os
+from scipy.stats import kurtosis, skew
 
 def down(data, bins):
     down_data= downsample(data,bins)
@@ -29,31 +30,44 @@ def down(data, bins):
 
  
 def one_file(files, cpu, directory='.', tag='yes'):
-    df = pd.DataFrame(columns=['file', 'chi2_sine', 'chi2_sine_square', 'chi2_gauss', 'chi2_dble','sigma_val', 'sigma1_val', 'sigma2_val'])
+    df = pd.DataFrame(columns=['file', 'chi2_sine', 'chi2_sine_square', 'chi2_gauss', 'chi2_dble','sigma_val', 'sigma1_val', 'sigma2_val','mean_IP','std_IP','skew_IP','kurt_IP','mean_DM','std_DM','skew_DM','kurt_DM'])
     
     for i, file in enumerate(files):
         print_exe(f'{i}/{len(files)} x 48') if cpu == 0 else None
         try:
             pfd_contents = pp.pfd(file)
             summed_profile = get_dedispersed_profile(pfd_contents)
+            lodm = pfd_contents.dms[0]
+            hidm = pfd_contents.dms[-1]
+            chis,DMs = pfd_contents.plot_chi2_vs_DM(loDM=lodm, hiDM=hidm, N=64)
             DOF=float(pfd_contents.DOFcor)
             DOF=63 * pfd_contents.DOF_corr()
-            print(DOF)
+            print('chis shape: ', chis.shape)
+            #print(DOF)
 
             # Perform fits using the provided tag and directory
             chi2_sine = sine_fit1(summed_profile, tag, directory=directory)
             chi2_sine_square = sine_squared_fit(summed_profile, tag, directory=directory)
             chi2_gauss, sigma_val= gaussian_fit(summed_profile, tag, directory=directory)
             chi2_dble,sigma1_val, sigma2_val= double_gaussian_fit(summed_profile, tag, directory=directory)
+            mean_IFP= calculate_mean(summed_profile)
+            std_IFP=calculate_std(summed_profile)
+            skew_IFP=calculate_skewness(summed_profile)
+            kurt_IFP=calculate_excess_kurtosis(summed_profile)
+            mean_DM=calculate_mean(chis)
+            std_DM=calculate_std(chis)
+            skew_DM=calculate_skewness(chis)
+            kurt_DM=calculate_excess_kurtosis(chis)
+
         except Exception:
             # In case of error, set chi2 values to 0
-            df.loc[i] = [file, 0, 0, 0, 0, 0, 0, 0]
+            df.loc[i] = [file, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0]
         else:
             # Otherwise, record the chi2 values for each file
-            print('DOF:', DOF)
-            print('gauss/DOF: ', chi2_gauss/DOF)
-            print('gauss:', chi2_gauss)
-            df.loc[i] = [file, chi2_sine/DOF, chi2_sine_square/DOF, chi2_gauss/DOF, chi2_dble/DOF, sigma_val, sigma1_val, sigma2_val]
+            # print('DOF:', DOF)
+            # print('gauss/DOF: ', chi2_gauss/DOF) 
+            # print('gauss:', chi2_gauss)
+            df.loc[i] = [file, chi2_sine/DOF, chi2_sine_square/DOF, chi2_gauss/DOF, chi2_dble/DOF, sigma_val, sigma1_val, sigma2_val, mean_IFP, std_IFP, skew_IFP,kurt_IFP, mean_DM, std_DM, skew_DM, kurt_DM]
 
     # Save the results to a CSV file
     df.to_csv(f'/tmp/dbhatnagar/temp_{cpu}.tmpcsv')
@@ -87,6 +101,9 @@ def double_gaussian_function(x, A1, mu1, sigma1, A2, mu2, sigma2, C):
     gaussian1 = A1 * np.exp(-(x - mu1)**2 / (2 * sigma1**2))
     gaussian2 = A2 * np.exp(-(x - mu2)**2 / (2 * sigma2**2))
     return gaussian1 + gaussian2 + C
+
+
+
 
 # Function to plot and fit for a given data and function, with optional suffix and directory
 def fit_and_plot(x_data, y_data, fit_function, initial_guess, plot_title, base_filename, suffix='', directory='',csv_maker=False):
@@ -227,6 +244,31 @@ def get_dedispersed_profile(pfd_contents):
     #elapsed_time = time.time() - start_time
     return result
 
+def calculate_excess_kurtosis(arr):
+    """
+    Calculate the excess kurtosis of a 1D numpy array.
+    Excess kurtosis is calculated as kurtosis - 3.
+    """
+    return kurtosis(arr, fisher=True)
+
+def calculate_mean(arr):
+    """
+    Calculate the mean of a 1D numpy array.
+    """
+    return np.mean(arr)
+
+def calculate_std(arr):
+    """
+    Calculate the standard deviation of a 1D numpy array.
+    """
+    return np.std(arr, ddof=0)  # population std deviation; for sample std use ddof=1
+
+def calculate_skewness(arr):
+    """
+    Calculate the skewness of a 1D numpy array.
+    """
+    return skew(arr)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dir", help="pfd directory", required=True)
@@ -249,7 +291,7 @@ def main():
 
     # Combine the temporary CSV files from all CPUs into a single DataFrame
     
-    final_df = pd.DataFrame(columns=['file', 'chi2_sine', 'chi2_sine_square', 'chi2_gauss', 'chi2_dble','sigma_val', 'sigma1_val', 'sigma2_val'])
+    final_df = pd.DataFrame(columns=['file', 'chi2_sine', 'chi2_sine_square', 'chi2_gauss', 'chi2_dble','sigma_val', 'sigma1_val', 'sigma2_val','mean_IP','std_IP','skew_IP','kurt_IP','mean_DM','std_DM','skew_DM','kurt_DM'])
     
     for cpu in range(ncpus):
         df_tmp = pd.read_csv(output_dir / f'temp_{cpu}.tmpcsv', index_col=0)  # Read from output_dir
