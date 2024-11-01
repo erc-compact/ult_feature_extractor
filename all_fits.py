@@ -36,18 +36,24 @@ def one_file(files, cpu, directory='.', tag='yes'):
         try:
             pfd_contents = pp.pfd(file)
             summed_profile = get_dedispersed_profile(pfd_contents)
+            DOF=float(pfd_contents.DOFcor)
+            DOF=63 * pfd_contents.DOF_corr()
+            print(DOF)
 
             # Perform fits using the provided tag and directory
             chi2_sine = sine_fit1(summed_profile, tag, directory=directory)
             chi2_sine_square = sine_squared_fit(summed_profile, tag, directory=directory)
-            sigma_val, chi2_gauss,  = gaussian_fit(summed_profile, tag, directory=directory)
-            sigma1_val, sigma2_val, chi2_dble= double_gaussian_fit(summed_profile, tag, directory=directory)
+            chi2_gauss, sigma_val= gaussian_fit(summed_profile, tag, directory=directory)
+            chi2_dble,sigma1_val, sigma2_val= double_gaussian_fit(summed_profile, tag, directory=directory)
         except Exception:
             # In case of error, set chi2 values to 0
             df.loc[i] = [file, 0, 0, 0, 0, 0, 0, 0]
         else:
             # Otherwise, record the chi2 values for each file
-            df.loc[i] = [file, chi2_sine, chi2_sine_square, chi2_gauss, chi2_dble, sigma_val, sigma1_val, sigma2_val]
+            print('DOF:', DOF)
+            print('gauss/DOF: ', chi2_gauss/DOF)
+            print('gauss:', chi2_gauss)
+            df.loc[i] = [file, chi2_sine/DOF, chi2_sine_square/DOF, chi2_gauss/DOF, chi2_dble/DOF, sigma_val, sigma1_val, sigma2_val]
 
     # Save the results to a CSV file
     df.to_csv(f'/tmp/dbhatnagar/temp_{cpu}.tmpcsv')
